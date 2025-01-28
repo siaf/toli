@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use anyhow::{Result, anyhow};
 use serde_json::Value;
-use crate::llm::LLMBackend;
+use crate::llm::{LLMBackend, CommandOption};
 
 pub struct OpenAIBackend {
     api_key: String,
@@ -19,7 +19,7 @@ impl OpenAIBackend {
 
 #[async_trait]
 impl LLMBackend for OpenAIBackend {
-    async fn translate_to_command(&self, query: &str) -> Result<String> {
+    async fn translate_to_command(&self, query: &str) -> Result<Vec<ResponseType>> {
         let client = reqwest::Client::new();
         let response = client
             .post("https://api.openai.com/v1/chat/completions")
@@ -30,7 +30,7 @@ impl LLMBackend for OpenAIBackend {
                 "messages": [
                     {
                         "role": "system",
-                        "content": "You are a helpful command-line assistant. Translate the user's natural language query into the most appropriate shell command. Respond with ONLY the command, no explanations."
+                        "content": "You are a helpful command-line assistant. Translate the user's query into appropriate shell commands. Provide 2-3 different command options with explanations. Format your response as a JSON array of objects, where each object has 'command' and 'explanation' fields. The command should be the exact shell command to run, and the explanation should briefly describe what the command does and why it might be preferred."
                     },
                     {
                         "role": "user",
@@ -52,9 +52,31 @@ impl LLMBackend for OpenAIBackend {
         let response_data: Value = serde_json::from_str(&response_text)
             .map_err(|e| anyhow!("Failed to parse response: {}", e))?;
 
-        response_data["choices"][0]["message"]["content"]
+        let content = response_data["choices"][0]["message"]["content"]
             .as_str()
-            .map(String::from)
-            .ok_or_else(|| anyhow!("Invalid response format"))
+            .ok_or_else(|| anyhow!("Invalid response format"))?;
+
+        match serde_json::from_str::<Vec<CommandOption>>(content) {
+            Ok(options) => {
+                if options.is_empty() {
+                    return Err(anyhow!("No valid command options generated"));
+                }
+                let responses: Vec<ResponseType> = options.into_iter()
+                    .map(|opt| {
+                        if opt.confidence >= 0.8 {
+                            ResponseType::Command(opt)
+                        } else if opt.confidence >= 0.5 {
+                            ResponseType::ScriptRecommended(opt.command)
+                        } else {
+                            ResponseType::Uncertain(format!("Uncertain about command: {}", opt.command))
+                        }
+                    })
+                    .collect();
+                Ok(responses)
+            }
+            Err(_) => {
+                Ok(vec![ResponseType::Uncertain(String::from("Unable to parse response as valid command options."))])
+            }
+        }
     }
 }
