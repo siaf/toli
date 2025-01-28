@@ -26,7 +26,7 @@ impl LLMBackend for OllamaBackend {
             .json(&serde_json::json!({
                 "model": self.model,
                 "prompt": format!(
-                    "You are a helpful command-line assistant. Translate the following query into the most appropriate shell command: {}",
+                    "You are a helpful command-line assistant. Translate the following query into the most appropriate shell command, Respond with ONLY the command, no explanations. Here it goes: {}",
                     query
                 ),
                 "stream": false
