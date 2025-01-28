@@ -1,0 +1,23 @@
+/target/
+**/*.rs.bk
+*.pdb
+
+# Editor directories and files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment files that might contain sensitive data
+.env
+
+# Config files that might contain API keys
+config.toml
+
+# OS-specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
