@@ -41,7 +41,7 @@ async fn main() -> Result<()> {
     };
 
     // Get command options from LLM
-    let options = llm.translate_to_command(&query).await?;
+    let options = llm.translate_to_command(&query, &config.additional_context).await?;
 
     // Display command options
     for (i, option) in options.iter().enumerate() {

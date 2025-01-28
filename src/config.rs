@@ -25,19 +25,17 @@ pub struct Config {
     pub backend: LlmBackend,
     pub openai: Option<OpenAIConfig>,
     pub ollama: Option<OllamaConfig>,
+    pub additional_context: String,
 }
 
 impl Config {
     pub fn load() -> Result<Self> {
-        let config_path = std::env::current_dir()?.join("config.toml");
-
+        let config_path = get_config_file_path();
         if !config_path.exists() {
             return Self::create_default_config(&config_path);
         }
-
-        let config_str = std::fs::read_to_string(config_path)?;
-        let config: Config = toml::from_str(&config_str)?;
-        Ok(config)
+        let config_str = std::fs::read_to_string(&config_path)?;
+        Ok(toml::from_str(&config_str)?)
     }
 
     fn create_default_config(config_path: &PathBuf) -> Result<Self> {
@@ -51,6 +49,7 @@ impl Config {
                 endpoint: String::from("http://localhost:11434"),
                 model: String::from("llama3.2"),
             }),
+            additional_context: String::from("running macos and generally zsh, is a developer, and uses brew"),
         };
 
         let config_str = toml::to_string_pretty(&default_config)?;
@@ -61,4 +60,9 @@ impl Config {
 
         Ok(default_config)
     }
+}
+
+fn get_config_file_path() -> PathBuf {
+    let home = dirs::home_dir().expect("Could not find home directory");
+    home.join(".config").join("howto").join("config.toml")
 }

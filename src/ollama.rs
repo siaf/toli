@@ -20,7 +20,7 @@ impl OllamaBackend {
 
 #[async_trait]
 impl LLMBackend for OllamaBackend {
-    async fn translate_to_command(&self, query: &str) -> Result<Vec<ResponseType>> {
+    async fn translate_to_command(&self, query: &str, additional_context: &str) -> Result<Vec<ResponseType>> {
         let mut attempts = 0;
         let max_attempts = 5;
         let mut failed_responses = Vec::new();
@@ -34,7 +34,8 @@ impl LLMBackend for OllamaBackend {
 
             let client = reqwest::Client::new();
             let mut prompt = format!(
-                "You are a helpful command-line assistant. Your task is to translate user queries into appropriate shell commands. Details about users environment: running macos and generally zsh, is a developer, and uses brew. RESPOND ONLY WITH A VALID JSON ARRAY OF COMMAND OPTIONS. Each command option must have these fields:\n\n- 'command': The exact shell command to run\n- 'explanation': A brief description of what the command does and why it's recommended\n- 'confidence': A float between 0 and 1 indicating your confidence in the command (>= 0.8 for direct commands, >= 0.5 for script recommendations, < 0.5 for uncertain suggestions)\n\nExample response format:\n[{{\"command\": \"ls -la\", \"explanation\": \"List all files with detailed information\", \"confidence\": 0.9}}]\n\nProvide up to 5 command options. DO NOT include any text before or after the JSON array.\n\nHere's the query: {}",
+                "You are a helpful command-line assistant. Your task is to translate user queries into appropriate shell commands. Details about user's environment: {}. RESPOND ONLY WITH A VALID JSON ARRAY OF COMMAND OPTIONS. Each command option must have these fields:\n\n- 'command': The exact shell command to run\n- 'explanation': A brief description of what the command does and why it's recommended\n- 'confidence': A float between 0 and 1 indicating your confidence in the command (>= 0.8 for direct commands, >= 0.5 for script recommendations, < 0.5 for uncertain suggestions)\n\nExample response format:\n[{{\"command\": \"ls -la\", \"explanation\": \"List all files with detailed information\", \"confidence\": 0.9}}]\n\nProvide up to 5 command options. DO NOT include any text before or after the JSON array.\n\nHere's the query: {}",
+                additional_context,
                 query
             );
 
@@ -45,8 +46,6 @@ impl LLMBackend for OllamaBackend {
                 }
                 prompt.push_str("\nPlease ensure your response is a valid JSON array.");
             }
-
-            prompt.push_str(&format!("\n\nHere's the query: {}", query));
 
             let response = client
                 .post(format!("{}/api/generate", self.endpoint))
@@ -99,11 +98,10 @@ impl LLMBackend for OllamaBackend {
             }
 
             attempts += 1;
-            print!("\r{}{}", "Thinking", feedback[attempts % feedback.len()]);
-            std::io::stdout().flush().ok();
         }
 
-        // If all attempts failed, fall back to using the last response as a direct command
-        Ok(vec![ResponseType::Uncertain(String::from("Unable to generate a valid command after multiple attempts."))])
+        Ok(vec![ResponseType::Uncertain(String::from(
+            "Failed to generate valid command options after multiple attempts."
+        ))])
     }
 }

@@ -19,7 +19,7 @@ impl OpenAIBackend {
 
 #[async_trait]
 impl LLMBackend for OpenAIBackend {
-    async fn translate_to_command(&self, query: &str) -> Result<Vec<ResponseType>> {
+    async fn translate_to_command(&self, query: &str, additional_context: &str) -> Result<Vec<ResponseType>> {
         let client = reqwest::Client::new();
         let response = client
             .post("https://api.openai.com/v1/chat/completions")
@@ -30,7 +30,7 @@ impl LLMBackend for OpenAIBackend {
                 "messages": [
                     {
                         "role": "system",
-                        "content": "You are a helpful command-line assistant. Your task is to translate user queries into appropriate shell commands. RESPOND ONLY WITH A VALID JSON ARRAY OF COMMAND OPTIONS. Each command option must have these fields:\n\n- 'command': The exact shell command to run\n- 'explanation': A brief description of what the command does and why it's recommended\n- 'confidence': A float between 0 and 1 indicating your confidence in the command (>= 0.8 for direct commands, >= 0.5 for script recommendations, < 0.5 for uncertain suggestions)\n\nExample response format:\n[{\"command\": \"ls -la\", \"explanation\": \"List all files with detailed information\", \"confidence\": 0.9}]\n\nProvide 2-3 command options. DO NOT include any text before or after the JSON array."
+                        "content": format!("You are a helpful command-line assistant. Your task is to translate user queries into appropriate shell commands. Details about user's environment: {}. RESPOND ONLY WITH A VALID JSON ARRAY OF COMMAND OPTIONS. Each command option must have these fields:\n\n- 'command': The exact shell command to run\n- 'explanation': A brief description of what the command does and why it's recommended\n- 'confidence': A float between 0 and 1 indicating your confidence in the command (>= 0.8 for direct commands, >= 0.5 for script recommendations, < 0.5 for uncertain suggestions)\n\nExample response format:\n[{{\"command\": \"ls -la\", \"explanation\": \"List all files with detailed information\", \"confidence\": 0.9}}]\n\nProvide 2-3 command options. DO NOT include any text before or after the JSON array.", additional_context)
                     },
                     {
                         "role": "user",
