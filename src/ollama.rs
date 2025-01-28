@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use anyhow::{Result, anyhow};
 use serde_json::Value;
 use std::io::Write;
-use crate::llm::{LLMBackend, CommandOption};
+use crate::llm::{LLMBackend, CommandOption, ResponseType};
 
 pub struct OllamaBackend {
     endpoint: String,
@@ -34,7 +34,8 @@ impl LLMBackend for OllamaBackend {
 
             let client = reqwest::Client::new();
             let mut prompt = format!(
-                "RESPOND ONLY IN JSON THAT IS PASSED TO A PARSER. DONT ADD anthing before or after the json response. You are a helpful command-line assistant. Translate the following query into the most appropriate shell commands. Provide command options with explanations. Format your response as a JSON array of objects, where each object has 'command' and 'explanation' fields. The command should be the exact shell command to run, and the explanation should briefly describe what the command does and why it might be preferred. We want to parse your responce using a json parser so don't include anything that can't be parsed."
+                "You are a helpful command-line assistant. Your task is to translate user queries into appropriate shell commands. Details about users environment: running macos and generally zsh, is a developer, and uses brew. RESPOND ONLY WITH A VALID JSON ARRAY OF COMMAND OPTIONS. Each command option must have these fields:\n\n- 'command': The exact shell command to run\n- 'explanation': A brief description of what the command does and why it's recommended\n- 'confidence': A float between 0 and 1 indicating your confidence in the command (>= 0.8 for direct commands, >= 0.5 for script recommendations, < 0.5 for uncertain suggestions)\n\nExample response format:\n[{{\"command\": \"ls -la\", \"explanation\": \"List all files with detailed information\", \"confidence\": 0.9}}]\n\nProvide up to 5 command options. DO NOT include any text before or after the JSON array.\n\nHere's the query: {}",
+                query
             );
 
             if !failed_responses.is_empty() {

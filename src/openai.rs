@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use anyhow::{Result, anyhow};
 use serde_json::Value;
-use crate::llm::{LLMBackend, CommandOption};
+use crate::llm::{LLMBackend, CommandOption, ResponseType};
 
 pub struct OpenAIBackend {
     api_key: String,
@@ -30,7 +30,7 @@ impl LLMBackend for OpenAIBackend {
                 "messages": [
                     {
                         "role": "system",
-                        "content": "You are a helpful command-line assistant. Translate the user's query into appropriate shell commands. Provide 2-3 different command options with explanations. Format your response as a JSON array of objects, where each object has 'command' and 'explanation' fields. The command should be the exact shell command to run, and the explanation should briefly describe what the command does and why it might be preferred."
+                        "content": "You are a helpful command-line assistant. Your task is to translate user queries into appropriate shell commands. RESPOND ONLY WITH A VALID JSON ARRAY OF COMMAND OPTIONS. Each command option must have these fields:\n\n- 'command': The exact shell command to run\n- 'explanation': A brief description of what the command does and why it's recommended\n- 'confidence': A float between 0 and 1 indicating your confidence in the command (>= 0.8 for direct commands, >= 0.5 for script recommendations, < 0.5 for uncertain suggestions)\n\nExample response format:\n[{\"command\": \"ls -la\", \"explanation\": \"List all files with detailed information\", \"confidence\": 0.9}]\n\nProvide 2-3 command options. DO NOT include any text before or after the JSON array."
                     },
                     {
                         "role": "user",

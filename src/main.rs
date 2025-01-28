@@ -2,6 +2,7 @@ use clap::Parser;
 use anyhow::Result;
 use std::process::Command;
 use std::io::{self, Write};
+use crate::llm::ResponseType;
 mod config;
 mod llm;
 mod openai;
@@ -45,8 +46,20 @@ async fn main() -> Result<()> {
     // Display command options
     for (i, option) in options.iter().enumerate() {
         println!("");
-        println!("{}) {}", i + 1, option.command);
-        println!("{}", option.explanation);
+        match option {
+            ResponseType::Command(cmd) => {
+                println!("{}) {}", i + 1, cmd.command);
+                println!("{}", cmd.explanation);
+            },
+            ResponseType::ScriptRecommended(cmd) => {
+                println!("{}) {}", i + 1, cmd);
+                println!("This command might need to be part of a script");
+            },
+            ResponseType::Uncertain(msg) => {
+                println!("{}) Uncertain command", i + 1);
+                println!("{}", msg);
+            }
+        }
     }
 
     let selected_command = if cli.execute {
@@ -64,7 +77,13 @@ async fn main() -> Result<()> {
             if selection < 1 || selection > options.len() {
                 return Err(anyhow::anyhow!("Invalid selection"));
             }
-            &options[selection - 1].command
+            match &options[selection - 1] {
+                ResponseType::Command(cmd) => &cmd.command,
+                ResponseType::ScriptRecommended(cmd) => cmd,
+                ResponseType::Uncertain(msg) => {
+                    return Err(anyhow::anyhow!("Cannot execute uncertain command: {}", msg));
+                }
+            }
         } else {
             print!("\nExecute this command? [Y/n]: ");
             io::stdout().flush()?;
@@ -74,7 +93,13 @@ async fn main() -> Result<()> {
                 println!("\nSkipping command execution.");
                 return Ok(());
             }
-            &options[0].command
+            match &options[0] {
+                ResponseType::Command(cmd) => &cmd.command,
+                ResponseType::ScriptRecommended(cmd) => cmd,
+                ResponseType::Uncertain(msg) => {
+                    return Err(anyhow::anyhow!("Cannot execute uncertain command: {}", msg));
+                }
+            }
         }
     } else {
         return Ok(());
