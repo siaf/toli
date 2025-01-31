@@ -1,5 +1,5 @@
 [package]
-name = "howto"
+name = "toli"
 version = "0.1.0"
 edition = "2021"
 description = "A natural language interface for shell commands"

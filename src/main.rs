@@ -9,15 +9,24 @@ mod openai;
 mod ollama;
 
 #[derive(Parser)]
-#[command(author, version, about)]
+#[command(author, version, about = "A CLI tool that translates natural language queries into shell commands")]
+#[command(help_template = "{about-section}\n\nUsage: {usage}\n\n{options}\n\nExamples:\n  howto 'find all pdf files in current directory'\n  howto -d 'list all running docker containers'\n  howto -s 'show system memory usage'\n\nNote: By default, commands are displayed with explanations but not executed.")]
+#[command(after_help = "Run 'howto --help' for more information about available options.")]
+#[command(arg_required_else_help = true)]
 struct Cli {
     /// The query to translate into a shell command
-    #[arg(required = true)]
+    #[arg(required = true, value_name = "QUERY")]
     query: Vec<String>,
 
-    /// Execute the command instead of just showing it
-    #[arg(short, long)]
-    execute: bool,
+    /// Show command options without executing
+    #[arg(short = 's', long = "how", default_value_t = true,
+          help = "Display the command explanation without executing it")]
+    how: bool,
+
+    /// Execute the selected command
+    #[arg(short = 'd', long = "do", default_value_t = false,
+          help = "Execute the command after displaying it")]
+    do_execute: bool,
 }
 
 #[tokio::main]
@@ -62,7 +71,7 @@ async fn main() -> Result<()> {
         }
     }
 
-    let selected_command = if cli.execute {
+    let selected_command = if cli.do_execute {
         if options.len() > 1 {
             // Prompt user to select a command
             print!("\nSelect a command to execute (1-{}) or 0 to skip: ", options.len());
