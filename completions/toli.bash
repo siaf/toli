@@ -18,7 +18,7 @@ _toli() {
 
     case "${cmd}" in
         toli)
-            opts=" --how --do --version"
+            opts=" --how --do --explain --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 1 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
                 return 0

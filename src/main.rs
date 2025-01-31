@@ -27,6 +27,11 @@ struct Cli {
     #[arg(short = 'd', long = "do", default_value_t = false,
           help = "Execute the command after displaying it")]
     do_execute: bool,
+
+    /// Explain what a command does
+    #[arg(short = 'e', long = "explain", default_value_t = false,
+          help = "Explain what a given command does")]
+    explain: bool,
 }
 
 #[tokio::main]
@@ -50,23 +55,46 @@ async fn main() -> Result<()> {
     };
 
     // Get command options from LLM
-    let options = llm.translate_to_command(&query, &config.additional_context).await?;
+    let options = if cli.explain {
+        // For explain flag, use the dedicated explain_command method
+        vec![llm.explain_command(&query, &config.additional_context).await?]
+    } else {
+        llm.translate_to_command(&query, &config.additional_context).await?
+    };
 
     // Display command options
-    for (i, option) in options.iter().enumerate() {
-        println!("");
-        match option {
-            ResponseType::Command(cmd) => {
-                println!("{}) {}", i + 1, cmd.command);
-                println!("{}", cmd.explanation);
-            },
-            ResponseType::ScriptRecommended(cmd) => {
-                println!("{}) {}", i + 1, cmd);
-                println!("This command might need to be part of a script");
-            },
-            ResponseType::Uncertain(msg) => {
-                println!("{}) Uncertain command", i + 1);
-                println!("{}", msg);
+    if cli.explain {
+        // For explain flag, we only expect and show a single explanation
+        if let Some(option) = options.first() {
+            match option {
+                ResponseType::Command(cmd) => {
+                    println!("\nCommand: {}", query);
+                    println!("\nExplanation:");
+                    println!("{}", cmd.explanation);
+                },
+                ResponseType::ScriptRecommended(_) | ResponseType::Uncertain(_) => {
+                    return Err(anyhow::anyhow!("Unable to explain the command. Please check if the command is valid."));
+                }
+            }
+        } else {
+            return Err(anyhow::anyhow!("No explanation available for the command."));
+        }
+    } else {
+        for (i, option) in options.iter().enumerate() {
+            println!("");
+            match option {
+                ResponseType::Command(cmd) => {
+                    println!("{}) {}", i + 1, cmd.command);
+                    println!("{}", cmd.explanation);
+                },
+                ResponseType::ScriptRecommended(cmd) => {
+                    println!("{}) {}", i + 1, cmd);
+                    println!("This command might need to be part of a script");
+                },
+                ResponseType::Uncertain(msg) => {
+                    println!("{}) Uncertain command", i + 1);
+                    println!("{}", msg);
+                }
             }
         }
     }

@@ -104,4 +104,45 @@ impl LLMBackend for OllamaBackend {
             "Failed to generate valid command options after multiple attempts."
         ))])
     }
+
+    async fn explain_command(&self, command: &str, additional_context: &str) -> Result<ResponseType> {
+        let client = reqwest::Client::new();
+        let prompt = format!(
+            "You are a command-line expert. Explain in detail what this command does: '{}'. Consider the following context about the user's environment: {}. \
+             Format your explanation to cover: 1) Main purpose 2) How it works 3) Important flags/options 4) Potential risks or considerations",
+            command, additional_context
+        );
+
+        let response = client
+            .post(format!("{}/api/generate", self.endpoint))
+            .json(&serde_json::json!({
+                "model": self.model,
+                "prompt": prompt,
+                "stream": false
+            }))
+            .send()
+            .await
+            .map_err(|e| anyhow!("Failed to send request: {}", e))?;
+
+        if !response.status().is_success() {
+            return Err(anyhow!("API request failed with status: {}", response.status()));
+        }
+
+        let response_text = response.text().await
+            .map_err(|e| anyhow!("Failed to read response body: {}", e))?;
+
+        let response_data: Value = serde_json::from_str(&response_text)
+            .map_err(|e| anyhow!("Failed to parse response: {}", e))?;
+
+        let explanation = response_data["response"]
+            .as_str()
+            .ok_or_else(|| anyhow!("Invalid response format"))?
+            .to_string();
+
+        Ok(ResponseType::Command(CommandOption {
+            command: command.to_string(),
+            explanation,
+            confidence: 1.0
+        }))
+    }
 }

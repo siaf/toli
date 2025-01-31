@@ -10,6 +10,7 @@ A command-line interface tool that translates natural language queries into shel
 - Support for multiple LLM backends (OpenAI and Ollama)
 - Configurable settings via TOML configuration file
 - Option to execute translated commands directly
+- Command explanation functionality
 
 ## Installation
 
@@ -32,6 +33,7 @@ Add these lines to your shell configuration file (e.g., ~/.bashrc, ~/.zshrc):
 ```bash
 alias howto='toli --how'
 alias do='toli --do'
+alias explain='toli --explain'
 ```
 
 ## Configuration
@@ -74,9 +76,13 @@ toli --how -s "show all running docker containers"
 # Execute the command after confirmation
 toli --do "show all running docker containers"
 
+# Get an explanation of what a command does
+toli --explain "docker ps -a"
+
 # Using aliases (if configured)
 howto "show all running docker containers"  # Same as toli --how
 do "show all running docker containers"      # Same as toli --do
+explain "docker ps -a"                      # Same as toli --explain
 ```
 
 ## Contributing
