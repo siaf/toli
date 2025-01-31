@@ -2,7 +2,7 @@
 name = "toli"
 version = "0.1.0"
 edition = "2021"
-description = "A natural language interface for shell commands"
+description = "TOLI (Terminal Intelligence & Learning Operator) - A natural language interface for shell commands"
 
 [dependencies]
 clap = { version = "4.4", features = ["derive"] }

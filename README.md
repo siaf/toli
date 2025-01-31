@@ -1,5 +1,7 @@
 # HowTo CLI Tool
 
+# TOLI (Terminal Intelligence & Learning Operator)
+
 A command-line interface tool that translates natural language queries into shell commands using AI language models.
 
 ## Features
@@ -13,8 +15,8 @@ A command-line interface tool that translates natural language queries into shel
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/howto.git
-cd howto
+git clone https://github.com/yourusername/toli.git
+cd toli
 ```
 
 2. Build the project:
@@ -23,6 +25,14 @@ cargo build --release
 ```
 
 3. (Optional) Add to your PATH for global access
+
+4. Set up convenient aliases (recommended):
+
+Add these lines to your shell configuration file (e.g., ~/.bashrc, ~/.zshrc):
+```bash
+alias howto='toli --how'
+alias do='toli --do'
+```
 
 ## Configuration
 
@@ -56,10 +66,17 @@ model = "llama2"
 
 ```bash
 # Get a command without executing it
-howto "show all running docker containers"
+toli --how "show all running docker containers"
 
-# Execute the command directly
-howto -e "show all running docker containers"
+# Show command with explanation
+toli --how -s "show all running docker containers"
+
+# Execute the command after confirmation
+toli --do "show all running docker containers"
+
+# Using aliases (if configured)
+howto "show all running docker containers"  # Same as toli --how
+do "show all running docker containers"      # Same as toli --do
 ```
 
 ## Contributing

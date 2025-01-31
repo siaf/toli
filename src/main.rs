@@ -10,7 +10,7 @@ mod ollama;
 
 #[derive(Parser)]
 #[command(author, version, about = "A CLI tool that translates natural language queries into shell commands")]
-#[command(help_template = "{about-section}\n\nUsage: {usage}\n\n{options}\n\nExamples:\n  howto 'find all pdf files in current directory'\n  howto -d 'list all running docker containers'\n  howto -s 'show system memory usage'\n\nNote: By default, commands are displayed with explanations but not executed.")]
+#[command(help_template = "{about-section}\n\nUsage: {usage}\n\n{options}\n\nExamples:\n  toli --how 'find all pdf files in current directory'\n  toli --do 'list all running docker containers'\n  toli 'show system memory usage'\n\nNote: By default, commands are displayed with explanations but not executed.")]
 #[command(after_help = "Run 'howto --help' for more information about available options.")]
 #[command(arg_required_else_help = true)]
 struct Cli {
