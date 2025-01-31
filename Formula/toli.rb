@@ -1,14 +1,33 @@
 class Toli < Formula
+  # Before submitting to Homebrew, follow these steps:
+  #
+  # 1. Create a new GitHub release with version tag (e.g., v0.1.0)
+  #
+  # 2. Build release assets:
+  #    cargo build --release
+  #    # For macOS:
+  #    tar czf toli-0.1.0-x86_64-apple-darwin.tar.gz -C target/release toli completions/
+  #    # For Linux:
+  #    tar czf toli-0.1.0-x86_64-unknown-linux-gnu.tar.gz -C target/release toli completions/
+  #
+  # 3. Upload both tar.gz files to the GitHub release
+  #
+  # 4. Calculate SHA256 checksums:
+  #    shasum -a 256 toli-0.1.0-x86_64-apple-darwin.tar.gz
+  #    shasum -a 256 toli-0.1.0-x86_64-unknown-linux-gnu.tar.gz
+  #
+  # 5. Replace the SHA256 placeholders below with actual values
+  #
   desc "Terminal Intelligence & Learning Operator - Natural language interface for shell commands"
   homepage "https://github.com/siaf/toli"
   version "0.1.0"
 
   if OS.mac?
     url "https://github.com/siaf/toli/releases/download/v#{version}/toli-#{version}-x86_64-apple-darwin.tar.gz"
-    sha256 "REPLACE_WITH_ACTUAL_SHA256_AFTER_RELEASE"
+    sha256 "58e15265909633f8e9291ec523084231eba73b8512ca5cf64a486238ca8cfab9"
   elsif OS.linux?
     url "https://github.com/siaf/toli/releases/download/v#{version}/toli-#{version}-x86_64-unknown-linux-gnu.tar.gz"
-    sha256 "REPLACE_WITH_ACTUAL_SHA256_AFTER_RELEASE"
+    sha256 "5e7b720146638c668a93a0bcef8fb96fd9eff23328a7b1ed436c5b17430d987d"
   end
 
   depends_on "rust" => :build
