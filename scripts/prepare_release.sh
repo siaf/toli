@@ -19,11 +19,26 @@ cargo build --release
 rm -rf release-assets
 mkdir -p release-assets
 
+# Create temporary directories for packaging
+rm -rf temp-darwin temp-linux
+mkdir -p temp-darwin temp-linux
+
+# Copy files for macOS package
+cp target/release/toli temp-darwin/
+cp -r completions temp-darwin/
+
+# Copy files for Linux package
+cp target/release/toli temp-linux/
+cp -r completions temp-linux/
+
 # Package for macOS
-tar czf "release-assets/toli-${VERSION}-x86_64-apple-darwin.tar.gz" -C target/release toli -C ../../completions .
+tar czf "release-assets/toli-${VERSION}-x86_64-apple-darwin.tar.gz" -C temp-darwin .
 
 # Package for Linux (assuming cross-compilation is set up)
-tar czf "release-assets/toli-${VERSION}-x86_64-unknown-linux-gnu.tar.gz" -C target/release toli -C ../../completions .
+tar czf "release-assets/toli-${VERSION}-x86_64-unknown-linux-gnu.tar.gz" -C temp-linux .
+
+# Clean up temporary directories
+rm -rf temp-darwin temp-linux
 
 # Calculate SHA256 checksums
 DARWIN_SHA256=$(shasum -a 256 "release-assets/toli-${VERSION}-x86_64-apple-darwin.tar.gz" | cut -d' ' -f1)
@@ -32,8 +47,8 @@ LINUX_SHA256=$(shasum -a 256 "release-assets/toli-${VERSION}-x86_64-unknown-linu
 # Update Formula/toli.rb with new version and checksums
 sed -i '' \
     -e "s/version \".*\"/version \"${VERSION}\"/" \
-    -e "s/sha256 \".*\"  # macOS/sha256 \"${DARWIN_SHA256}\"  # macOS/" \
-    -e "s/sha256 \".*\"  # Linux/sha256 \"${LINUX_SHA256}\"  # Linux/" \
+    -e "s/sha256 \".*\"/sha256 \"${DARWIN_SHA256}\"/" \
+    -e "s/sha256 \".*\"/sha256 \"${LINUX_SHA256}\"/" \
     Formula/toli.rb
 
 echo "
