@@ -15,7 +15,7 @@ A command-line interface tool that translates natural language queries into shel
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/toli.git
+git clone https://github.com/siaf/toli.git
 cd toli
 ```
 
