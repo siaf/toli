@@ -11,6 +11,7 @@ A command-line interface tool that translates natural language queries into shel
 - Configurable settings via TOML configuration file
 - Option to execute translated commands directly
 - Command explanation functionality
+- Command alias suggestions
 
 ## Installation
 

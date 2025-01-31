@@ -32,6 +32,11 @@ struct Cli {
     #[arg(short = 'e', long = "explain", default_value_t = false,
           help = "Explain what a given command does")]
     explain: bool,
+
+    /// Suggest aliases for a command
+    #[arg(short = 'a', long = "alias", default_value_t = false,
+          help = "Suggest aliases for a given command")]
+    alias: bool,
 }
 
 #[tokio::main]
@@ -58,6 +63,22 @@ async fn main() -> Result<()> {
     let options = if cli.explain {
         // For explain flag, use the dedicated explain_command method
         vec![llm.explain_command(&query, &config.additional_context).await?]
+    } else if cli.alias {
+        // For alias flag, use the suggest_aliases method
+        match llm.suggest_aliases(&query, &config.additional_context).await {
+            Ok(aliases) => {
+                println!("\nSuggested aliases for '{}':"  , query);
+                for alias in aliases {
+                    println!("\nAlias: {}", alias.command);
+                    println!("Description: {}", alias.explanation);
+                    println!("---");
+                }
+                return Ok(());
+            }
+            Err(e) => {
+                return Err(anyhow::anyhow!("Failed to get alias suggestions: {}", e));
+            }
+        }
     } else {
         llm.translate_to_command(&query, &config.additional_context).await?
     };

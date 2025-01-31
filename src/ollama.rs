@@ -105,6 +105,122 @@ impl LLMBackend for OllamaBackend {
         ))])
     }
 
+    async fn suggest_aliases(&self, command: &str, additional_context: &str) -> Result<Vec<CommandOption>> {
+        let mut attempts = 0;
+        let max_attempts = 5;
+        let mut failed_responses = Vec::new();
+        let feedback = [".   ", "..  ", "... ", "...."];
+
+        while attempts < max_attempts {
+            if attempts > 0 {
+                print!("\rThinking{}", feedback[attempts % feedback.len()]);
+                std::io::stdout().flush().ok();
+            }
+
+            let client = reqwest::Client::new();
+            let mut prompt = format!(
+                "You are a command-line expert. \
+                Only For the command '{}', suggest (up to 3) useful aliases that would make working with this command more efficient.\n\n\
+                Don't suggest alias for other commands. Only the one provided earlier. \
+                Consider the following context about the user's environment, but only when applicable: {}. \
+                IMPORTANT: Your response must be a valid JSON array containing objects with exactly these fields:\n\
+                - 'command' (string with alias definition)\n\
+                - 'explanation' (string describing what it does)\n\
+                - 'confidence' (number between 0 and 1)\n\n\
+                Example response: [{{\
+                \"command\": \"alias ll='ls -la'\", \
+                \"explanation\": \"Lists all files in long format\", \
+                \"confidence\": 1.0\
+                }}]. \
+                Ensure proper JSON escaping and shell syntax conventions. \
+                RESPOND ONLY IN JSON. DO NOT INCLUDE ANYTHING ELSE BESIDE JSON.",
+                command,
+                additional_context
+            );
+
+            if !failed_responses.is_empty() {
+                prompt.push_str("\n\nPrevious attempts failed to generate valid JSON. Here are the failed responses:\n");
+                for (i, response) in failed_responses.iter().enumerate() {
+                    prompt.push_str(&format!("\nAttempt {}: {}\n", i + 1, response));
+                }
+                prompt.push_str("\nPlease ensure your response is a valid JSON array.");
+            }
+
+            let response = client
+                .post(format!("{}/api/generate", self.endpoint))
+                .json(&serde_json::json!({
+                    "model": self.model,
+                    "prompt": prompt,
+                    "stream": false
+                }))
+                .send()
+                .await
+                .map_err(|e| anyhow!("Failed to send request: {}", e))?;
+
+            if !response.status().is_success() {
+                return Err(anyhow!("API request failed with status: {}", response.status()));
+            }
+
+            let response_text = response.text().await
+                .map_err(|e| anyhow!("Failed to read response body: {}", e))?;
+
+            let response_data: Value = serde_json::from_str(&response_text)
+                .map_err(|e| anyhow!("Failed to parse response: {}", e))?;
+
+            let response_str = response_data["response"]
+                .as_str()
+                .ok_or_else(|| anyhow!("Invalid response format"))?;
+
+            // Clean up the response string to handle escaping issues
+            let cleaned_response = response_str
+                .trim()
+                .replace("\\'", "'")
+                .replace("\\\"", "\"")
+                .replace("\\\\", "\\")
+                .replace("\n", "")
+                .replace("\r", "");
+
+            //println!("Attempt {}: {}", attempts + 1, cleaned_response);
+
+            // Try parsing with serde_json first
+            let parse_result = serde_json::from_str::<Vec<CommandOption>>(&cleaned_response);
+            
+            // If that fails, try to extract JSON array from the response
+            let parse_result = if parse_result.is_err() {
+                if let Some(start) = cleaned_response.find('[') {
+                    if let Some(end) = cleaned_response.rfind(']') {
+                        let json_str = &cleaned_response[start..=end];
+                        serde_json::from_str::<Vec<CommandOption>>(json_str)
+                    } else {
+                        parse_result
+                    }
+                } else {
+                    parse_result
+                }
+            } else {
+                parse_result
+            };
+
+            match parse_result {
+                Ok(options) => {
+                    if options.is_empty() {
+                        failed_responses.push(cleaned_response.to_string());
+                    } else {
+                        return Ok(options);
+                    }
+                }
+                Err(e) => {
+                    //println!("Failed to parse JSON: {}", e);
+                    failed_responses.push(cleaned_response.to_string());
+                }
+            }
+
+            attempts += 1;
+        }
+
+        Ok(vec![])
+    }
+
     async fn explain_command(&self, command: &str, additional_context: &str) -> Result<ResponseType> {
         let client = reqwest::Client::new();
         let prompt = format!(
@@ -136,12 +252,11 @@ impl LLMBackend for OllamaBackend {
 
         let explanation = response_data["response"]
             .as_str()
-            .ok_or_else(|| anyhow!("Invalid response format"))?
-            .to_string();
+            .ok_or_else(|| anyhow!("Invalid response format"))?;
 
         Ok(ResponseType::Command(CommandOption {
             command: command.to_string(),
-            explanation,
+            explanation: explanation.to_string(),
             confidence: 1.0
         }))
     }

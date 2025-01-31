@@ -80,6 +80,54 @@ impl LLMBackend for OpenAIBackend {
         }
     }
 
+    async fn suggest_aliases(&self, command: &str, additional_context: &str) -> Result<Vec<CommandOption>> {
+        let client = reqwest::Client::new();
+        let messages = vec![
+            serde_json::json!({
+                "role": "system",
+                "content": format!(
+                    "You are a command-line expert. Your task is to suggest useful aliases for shell commands. Consider the following context about the user's environment: {}.",
+                    additional_context
+                )
+            }),
+            serde_json::json!({
+                "role": "user",
+                "content": format!(
+                    "For the command '{}', suggest up to 5 useful aliases that would make working with this command more efficient. Format your response as a valid JSON array where each item has a 'command' field with the alias definition (e.g., 'alias ll=\'ls -la\''), an 'explanation' field describing what it does, and a 'confidence' field between 0 and 1 (1.0 for common aliases, 0.8-0.9 for useful but less common ones). Ensure they follow shell syntax conventions.",
+                    command
+                )
+            })
+        ];
+
+        let response = client
+            .post("https://api.openai.com/v1/chat/completions")
+            .header("Authorization", format!("Bearer {}", self.api_key))
+            .json(&serde_json::json!({
+                "model": self.model,
+                "messages": messages,
+                "temperature": 0.7
+            }))
+            .send()
+            .await
+            .map_err(|e| anyhow!("Failed to send request: {}", e))?;
+
+        if !response.status().is_success() {
+            return Err(anyhow!("API request failed with status: {}", response.status()));
+        }
+
+        let response_data: Value = response.json().await
+            .map_err(|e| anyhow!("Failed to parse response: {}", e))?;
+
+        let content = response_data["choices"][0]["message"]["content"]
+            .as_str()
+            .ok_or_else(|| anyhow!("Invalid response format"))?;
+
+        let aliases: Vec<CommandOption> = serde_json::from_str(content)
+            .map_err(|e| anyhow!("Failed to parse aliases: {}", e))?;
+
+        Ok(aliases)
+    }
+
     async fn explain_command(&self, command: &str, additional_context: &str) -> Result<ResponseType> {
         let client = reqwest::Client::new();
         let response = client

@@ -20,6 +20,7 @@ pub struct CommandOption {
 pub trait LLMBackend {
     async fn translate_to_command(&self, query: &str, additional_context: &str) -> Result<Vec<ResponseType>>;
     async fn explain_command(&self, command: &str, additional_context: &str) -> Result<ResponseType>;
+    async fn suggest_aliases(&self, command: &str, additional_context: &str) -> Result<Vec<CommandOption>>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
