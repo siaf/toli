@@ -1,5 +1,3 @@
-# HowTo CLI Tool
-
 # TOLI (Terminal Intelligence & Learning Operator)
 
 A command-line interface tool that translates natural language queries into shell commands using AI language models.
@@ -72,7 +70,7 @@ model = "llama2"
 toli --how "show all running docker containers"
 
 # Show command with explanation
-toli --how -s "show all running docker containers"
+toli --how "show all running docker containers"
 
 # Execute the command after confirmation
 toli --do "show all running docker containers"

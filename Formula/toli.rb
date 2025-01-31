@@ -29,14 +29,17 @@ class Toli < Formula
       For bash (~/.bashrc):
         alias howto='toli --how'
         alias do='toli --do'
+        alias explain='toli --explain'
       
       For zsh (~/.zshrc):
         alias howto='toli --how'
         alias do='toli --do'
+        alias explain='toli --explain'
       
       For fish (~/.config/fish/config.fish):
         alias howto='toli --how'
         alias do='toli --do'
+        alias explain='toli --explain'
     EOS
   end
 
