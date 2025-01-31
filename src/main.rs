@@ -68,8 +68,7 @@ async fn main() -> Result<()> {
         if let Some(option) = options.first() {
             match option {
                 ResponseType::Command(cmd) => {
-                    println!("\nCommand: {}", query);
-                    println!("\nExplanation:");
+                   
                     println!("{}", cmd.explanation);
                 },
                 ResponseType::ScriptRecommended(_) | ResponseType::Uncertain(_) => {

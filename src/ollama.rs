@@ -108,8 +108,8 @@ impl LLMBackend for OllamaBackend {
     async fn explain_command(&self, command: &str, additional_context: &str) -> Result<ResponseType> {
         let client = reqwest::Client::new();
         let prompt = format!(
-            "You are a command-line expert. Explain in detail what this command does: '{}'. Consider the following context about the user's environment: {}. \
-             Format your explanation to cover: 1) Main purpose 2) How it works 3) Important flags/options 4) Potential risks or considerations",
+            "You are a command-line expert. Explain briefly what this command does: '{}'. Consider the following context about the user's environment: {}. \
+             Keep it brief to a paragraph.",
             command, additional_context
         );
 
