@@ -24,10 +24,10 @@ class Toli < Formula
 
   if OS.mac?
     url "https://github.com/siaf/toli/releases/download/v#{version}/toli-#{version}-x86_64-apple-darwin.tar.gz"
-    sha256 "064f24e53c57084b48b8700d380ff8baf99d769986dc2be9ee3a033d70f81009"
+    sha256 "3a00d2280fdf9e5fe7af42978a737569e45edb123b4b352ace02d302a4633039"
   elsif OS.linux?
     url "https://github.com/siaf/toli/releases/download/v#{version}/toli-#{version}-x86_64-unknown-linux-gnu.tar.gz"
-    sha256 "064f24e53c57084b48b8700d380ff8baf99d769986dc2be9ee3a033d70f81009"
+    sha256 "3a00d2280fdf9e5fe7af42978a737569e45edb123b4b352ace02d302a4633039"
   end
 
   depends_on "rust" => :build
